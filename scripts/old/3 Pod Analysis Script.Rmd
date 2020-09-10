@@ -1,0 +1,198 @@
+---
+title: "RNAseq 3 Pod Analysis"
+output: html_document
+---
+BiocManager::install("qusage")
+BiocManager::install("fgsea")
+```{r}
+#Packages
+library(qusage)
+library(fgsea)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(enrichR)
+library(splitstackshape)
+library(reshape2)
+```
+
+```{r}
+#Input file
+t <- read.csv("Datasets/Basemean 5/18-5/18-15_F_MEA_ERvEE.csv")
+              
+#Number of genes with log2 FC>0.3
+Upregulated <- filter(t, FC>0.3)
+Downregulated <- filter(t, FC< (-0.3))
+Upregulated
+Downregulated
+```
+
+```{r}
+#Pod 1: GSEA
+rnk.file <- "Datasets/Basemean 5/18-5/18-15_F_MEA_ERvEE.rnk.txt"
+gmt.file <- "Rat_GO_AllPathways_with_GO_iea_April_01_2019_symbol.gmt"
+ranks <- read.table(rnk.file,
+                    header=TRUE, colClasses = c("character", "numeric"))
+ranks <- setNames(ranks$FC, ranks$ID)    
+pathways <- gmtPathways(gmt.file)    
+fgseaRes <- fgsea(pathways, ranks, minSize=15, maxSize=500, nperm=10000)
+
+#cutoffs
+Datasets_tested <- sum(fgseaRes[,pval<2])
+Positive_ES <- sum(fgseaRes[,ES>0])
+Negative_ES <- sum(fgseaRes[,ES<0])
+FDR <- sum(fgseaRes[, padj < 0.25])
+Pval_0.01 <- sum(fgseaRes[, pval < 0.01])
+Pval_0.05 <- sum(fgseaRes[ , pval < 0.05])
+Datasets_tested
+Positive_ES
+Negative_ES
+FDR
+Pval_0.01
+Pval_0.05
+
+#Filter out p<0.05
+Sig <- filter(fgseaRes, pval<0.05)
+Upreg <- filter(Sig, ES>0)
+Downreg <- filter(Sig, ES<0)
+Upreg
+Downreg
+
+#Revigo input
+Split <- cSplit(Upreg, 'pathway', sep="%")
+Split
+Upreg_GO <- select(Split, pathway_3, pval)
+Split2 <- cSplit(Downreg, 'pathway', sep="%")
+Split2
+Downreg_GO <- select(Split2, pathway_3, pval)
+
+###Leading edge genes
+#LE_UP
+LE_UP <- Upreg$leadingEdge
+names(LE_UP) <- Upreg$pathway
+LE_UP2 <- melt(LE_UP)
+names(LE_UP2) <- c("ID", "Pathway")
+LE_UP2$ID <- toupper(LE_UP2$ID)
+LE_UP3 <- merge(LE_UP2, t, by="ID", all.x = TRUE)
+
+LE_DOWN <- Downreg$leadingEdge
+names(LE_DOWN) <- Downreg$pathway
+LE_DOWN2 <- melt(LE_DOWN)
+names(LE_DOWN2) <- c("ID", "Pathway")
+LE_DOWN2$ID <- toupper(LE_DOWN2$ID)
+LE_DOWN3 <- merge(LE_DOWN2, t, by="ID", all.x = TRUE)
+
+#save files
+#fgseaRes
+save(fgseaRes,file="18-15_F_MEA_ERvEE_fgseaRes.RData")
+#Raw
+df <- apply(fgseaRes,2,as.character)
+write.csv(df, file="GSEA all.csv")
+#Sig up and down
+df2 <- apply(Upreg,2,as.character)
+write.csv(df2, file="GSEA up.csv")
+df3 <- apply(Downreg,2,as.character)
+write.csv(df3, file="GSEA down.csv")
+#Revigo input
+write.csv(Upreg_GO, file="GSEA Up Revigo.csv")
+write.csv(Downreg_GO, file="GSEA Down Revigo.csv")
+#Leading edge
+write.csv(LE_UP3, file="GSEA LE_UP.csv")
+write.csv(LE_DOWN3, file="GSEA LE_DOWN.csv")
+
+###API Revigo
+
+```
+
+```{r}
+#Pod 2: Enrichr
+Top_100_Up <- top_n(t, 100, FC)
+Top_100_Down <- top_n(t, -100, FC)
+Top_100_Up
+Top_100_Down
+
+Up <- as.vector(Top_100_Up$ID)
+Down <- as.vector(Top_100_Down$ID)
+
+#API for GO BP, MF, CC
+dbs <- c("GO_Biological_Process_2018", "GO_Molecular_Function_2018", "GO_Cellular_Component_2018")
+
+#Upregulated
+Enriched_Up <- enrichr(Up, dbs)
+Enriched_Up[["GO_Biological_Process_2018"]]
+Enriched_Up[["GO_Molecular_Function_2018"]]
+Enriched_Up[["GO_Cellular_Component_2018"]]
+UP_BP <- filter(Enriched_Up[["GO_Biological_Process_2018"]], P.value<0.05)
+UP_MF <- filter(Enriched_Up[["GO_Molecular_Function_2018"]], P.value<0.05)
+UP_CC <- filter(Enriched_Up[["GO_Cellular_Component_2018"]], P.value<0.05)
+UP_BP
+UP_MF
+UP_CC
+
+#Downregulated
+Enriched_Down <- enrichr(Down, dbs)
+Enriched_Down[["GO_Biological_Process_2018"]]
+Enriched_Down[["GO_Molecular_Function_2018"]]
+Enriched_Down[["GO_Cellular_Component_2018"]]
+DOWN_BP <- filter(Enriched_Down[["GO_Biological_Process_2018"]], P.value<0.05)
+DOWN_MF <- filter(Enriched_Down[["GO_Molecular_Function_2018"]], P.value<0.05)
+DOWN_CC <- filter(Enriched_Down[["GO_Cellular_Component_2018"]], P.value<0.05)
+DOWN_BP
+DOWN_MF
+DOWN_CC
+
+#Revigo input
+Split3 <- cSplit(UP_BP, 'Term', sep="(")
+Split4 <- cSplit(Split3, 'Term_2', sep=")")
+UP_BP_GO <- select(Split4, 'Term_2_1', P.value)
+Split5 <- cSplit(UP_MF, 'Term', sep="(")
+Split6 <- cSplit(Split5, 'Term_2', sep=")")
+UP_MF_GO <- select(Split6, 'Term_2_1', P.value)
+Split7 <- cSplit(UP_CC, 'Term', sep="(")
+Split8 <- cSplit(Split7, 'Term_2', sep=")")
+UP_CC_GO <- select(Split8, 'Term_2_1', P.value)
+UP_GO <- rbind(UP_BP_GO, UP_MF_GO, UP_CC_GO)
+UP_GO
+
+Split9 <- cSplit(DOWN_BP, 'Term', sep="(")
+Split10 <- cSplit(Split9, 'Term_2', sep=")")
+DOWN_BP_GO <- select(Split10, 'Term_2_1', P.value)
+Split11 <- cSplit(DOWN_MF, 'Term', sep="(")
+Split12 <- cSplit(Split11, 'Term_2', sep=")")
+DOWN_MF_GO <- select(Split12, 'Term_2_1', P.value)
+Split13 <- cSplit(DOWN_CC, 'Term', sep="(")
+Split14 <- cSplit(Split13, 'Term_2', sep=")")
+DOWN_CC_GO <- select(Split14, 'Term_2_1', P.value)
+DOWN_GO <- rbind(DOWN_BP_GO, DOWN_MF_GO, DOWN_CC_GO)
+DOWN_GO
+
+#save files
+#All individual files
+write.csv(UP_BP, file="Enrichr UP BP.csv")
+write.csv(UP_MF, file="Enrichr UP MF.csv")
+write.csv(UP_CC, file="Enrichr UP CC.csv")
+write.csv(DOWN_BP, file="Enrichr DOWN BP.csv")
+write.csv(DOWN_MF, file="Enrichr DOWN MF.csv")
+write.csv(DOWN_CC, file="Enrichr DOWN CC.csv")
+#Revigo input
+write.csv(UP_GO, file="Enrichr UP Revigo.csv")
+write.csv(DOWN_GO, file="Enrichr DOWN Revigo.csv")
+
+###API Revigo
+```
+
+```{r}
+#Pod 3: iLINCS
+#Extract L1000
+listGenes <- readRDS("C:/Users/17242/Documents/ER Omics/ER Omics RNAseq/L1000GensList.rds")
+
+t %>% filter(ID %in% listGenes) %>%
+  rename(Name_GeneSymbol = 'ID', Value_LogDiffExp = `FC`, Significane_pvalue = `p`) -> t1
+t1
+
+# save files
+write_delim(t1, "18-15_F_MEA_ERvEE_L1000.txt" ,delim = "\t")
+
+###API iLINCS for Perturbagens
+```
+
