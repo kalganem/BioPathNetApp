@@ -16,6 +16,8 @@ library(splitstackshape)
 library(reshape2)
 ```
 
+
+
 ```{r}
 #Input file
 t <- read.csv("Datasets/Basemean 5/18-5/18-15_F_MEA_ERvEE.csv")
@@ -29,7 +31,7 @@ Downregulated
 
 ```{r}
 #Pod 1: GSEA
-rnk.file <- "Datasets/Basemean 5/18-5/18-15_F_MEA_ERvEE.rnk.txt"
+rnk.file <- "../../files/18-15_F_MEA_ERvEE.rnk.txt"
 gmt.file <- "Rat_GO_AllPathways_with_GO_iea_April_01_2019_symbol.gmt"
 ranks <- read.table(rnk.file,
                     header=TRUE, colClasses = c("character", "numeric"))
