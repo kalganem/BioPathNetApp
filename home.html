@@ -1,0 +1,85 @@
+<!-- Carousel
+================================================== -->
+<div id="myCarousel" class="carousel slide" data-ride="carousel">
+  <!-- Indicators -->
+  <ol class="carousel-indicators">
+    <li data-target="#myCarousel" data-slide-to="0" class="active"></li>
+  </ol>
+  <div class="carousel-inner">
+    <div class="item active">
+      <img src="images/bg3.jpg" class="center-block img-responsive">
+      <div class="container">
+        <div class="carousel-caption">
+          <h1 class="fit-head" style="color:white">BioPathNet</h1>
+          <p class="fit-text" style="color:white">A New Bioinformatics Pipeline to Comprehensively Analyze Transcriptomics Signatures</p>
+          <p>
+            <a class="btn btn-lg btn-primary" onclick="$('li:eq(1) a').tab('show');" role="button">Get started now &raquo;</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <a class="left carousel-control" href="#myCarousel" data-slide="prev"><span class="glyphicon glyphicon-chevron-left"></span></a>
+  <a class="right carousel-control" href="#myCarousel" data-slide="next"><span class="glyphicon glyphicon-chevron-right"></span></a>
+</div>
+<!-- /.carousel -->
+
+<div class="container marketing">
+  <!-- Three columns of text below the carousel -->
+  <div class="row">
+  <div class="container">
+    <h1 class="text-center fit-h1" style="font-size: 4em; margin-bottom: 30px;">The 3 Pods Anlaysis</h1>
+  </div>
+  </div>
+
+  <div class="row app-links">
+  <div class="col-md-4">
+    <img src="images/gsea_logo.jpg" width= 100px height= 80px alt="logo" class="center-block img-responsive">
+    <h2>GSEA</h2>
+    <p style="text-align:center">Full Signature Pathway Analysis</p>
+
+  </div><!-- /.col-md-4 -->
+  <div class="col-md-4">
+    <img src="images/enrichr_logo.png" width= 100px height= 60px alt="logo" class="center-block img-responsive">
+    <h2>Enrichr</h2>
+    <p style="text-align:center">Targeted Signature Pathway Analysis</p>
+
+  </div><!-- /.col-md-4 -->
+  <div class="col-md-4">
+    <img src="images/ilincs_logo.png" width= 100px height= 140px alt="logo" class="center-block img-responsive">
+    <h2>iLINCS</h2>
+    <p style="text-align:center">Perturbagen Connectivity Analysis</p>
+
+  </div><!-- /.col-md-4 -->
+  </div><!-- /.row -->
+
+
+  <!-- START THE FEATURETTES -->
+
+  <hr class="featurette-divider">
+
+  <div class="row featurette center-on-xs">
+  <div class="col-md-5 col-md-push-7">
+    <img src="images/pods_logo.png" width="100%" style="padding: 20px">
+  </div>
+  <div class="col-md-7 col-md-pull-5">
+    <h2>BioPathNet </h2>
+    <p class="lead"> <b><big>BioPathNet</big></b> is an R shiny application that consists of multiple analysis “pods,” each of which analyzes transcriptomics data in a different way.<br><br>  <b>Pod 1</b> conducts Full Transcriptome Pathway Analysis utilizing Gene Set Enrichment Analysis (GSEA).  This comprehensive analysis uses the entire transcriptome to determine which pathways and processes are upregulated or downregulated in the dataset, offering higher resolution and revealing subtle, wide-spread changes.<br><br>  <b>Pod 2</b> conducts Targeted Pathway Analysis utilizing Enrichr. This more traditional analysis offers a more focused view of the large pathway changes in the dataset.<br><br> <b>Pod 3</b> conducts Perturbagen Analysis utilizing iLINCS. This analysis uses gene signatures to identify drugs that could treat or mimic the present condition, with the idea that genes and pathways that are the targets of these drugs likely play a key role in in the dataset.<br> </p>
+     <div class="panel-group transparent-panel-group" id="accordionOne">
+        <div class="panel panel-default">
+          <div id="collapseOne" class="panel-collapse collapse">
+            <div class="panel-body text-left">
+
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+  </div>
+
+  <hr class="featurette-divider">
+
+
+</div>
+<!-- /END THE FEATURETTES -->

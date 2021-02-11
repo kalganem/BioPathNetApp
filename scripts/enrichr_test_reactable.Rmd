@@ -1,0 +1,134 @@
+---
+title: "Untitled"
+author: "Khaled Alganem"
+date: "9/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r cars}
+#library(httr)
+# add genes to enrichr
+# ENRICHR_URL <- 'http://maayanlab.cloud/Enrichr/addList'
+# 
+# genes_str = c(
+#   'PHF14', 'RBM3', 'MSL1', 'PHF21A', 'ARL10', 'INSR', 'JADE2', 'P2RX7',
+#   'LINC00662', 'CCDC101', 'PPM1B', 'KANSL1L', 'CRYZL1', 'ANAPC16', 'TMCC1',
+#   'CDH8', 'RBM11', 'CNPY2', 'HSPA1L', 'CUL2', 'PLBD2', 'LARP7', 'TECPR2', 
+#   'ZNF302', 'CUX1', 'MOB2', 'CYTH2', 'SEC22C', 'EIF4E3', 'ROBO2',
+#   'ADAMTS9-AS2', 'CXXC1', 'LINC01314', 'ATF7', 'ATP5F1')
+# 
+# r <- POST(ENRICHR_URL, body = list(list = paste(genes_str, collapse="\n"),
+#                                    description = 'Example gene list'
+#                                    ))
+# 
+# jsonlite::fromJSON(content(r, "text"))[[2]] -> req_id
+# 
+# 
+# # enrich
+# cols_values <- "Rank, Term name, P-value, Z-score, Combined score, Overlapping genes, Adjusted p-value, Old p-value, Old adjusted p-value"
+# cols_values <- strsplit(cols_values, ", ")[[1]]
+# 
+# 
+# bg_list <- c("KEGG_2015", "KEGG_2019_Human")
+# 
+# get_enrich <- function(x) {
+#   ENRICHR_URL = 'http://maayanlab.cloud/Enrichr/enrich'
+#   gene_set_library = x
+#   glue::glue("?userListId={req_id}&backgroundType={gene_set_library}") -> req_url
+#   r2 <- GET(
+#     paste0(ENRICHR_URL, req_url)
+#   )
+#   en_res <- jsonlite::fromJSON(content(r2, "text"))
+#   names(en_res) -> db
+#   
+#   as.data.frame(matrix(unlist(en_res[[1]]),nrow=length(en_res[[1]]),byrow=TRUE), stringsAsFactors = FALSE)
+# 
+# }
+# 
+# 
+# 
+# purrr::map_df(bg_list, get_enrich) %>%  View()
+# 
+# 
+# url = 'http://maayanlab.cloud/Enrichr/enrich'
+# db = "KEGG_2019_Human"
+# glue::glue("?userListId={req_id}&backgroundType={db}") -> url_req
+# r3 <- GET(
+#   paste0(url, url_req)
+# )
+# enr_res <- jsonlite::fromJSON(content(r3, "text"))
+# names(enr_res) -> db2
+# 
+# as.data.frame(matrix(unlist(enr_res[[1]]),nrow=length(enr_res[[1]]),byrow=TRUE), stringsAsFactors = FALSE)
+#               
+# 330/36
+# 
+# lengths(enr_res[[1]])
+# 
+# (9 * 36)
+
+
+library(enrichR)
+library(dplyr)
+library(sparkline)
+library(tidyverse)
+library(reactable)
+library(htmltools)
+
+listEnrichrDbs() -> dbs_en
+enrichr(c("AKT3", "AKT2"), databases = "GO_Biological_Process_2018") -> res
+res$GO_Biological_Process_2018 -> table_ex
+
+table_ex %>% mutate(Overlap = strsplit(Overlap, "/")) %>% select(Term, Overlap, Genes, P.value) -> data
+
+data %>% 
+  extract(Term, c("Term", "GOID"), "(.*)\\((.*)\\)") -> data
+
+
+make_color_pal <- function(colors, bias = 1) {
+  get_color <- colorRamp(colors, bias = bias)
+  function(x) rgb(get_color(x), maxColorValue = 255)
+}
+off_rating_color <- make_color_pal(c("#ff2700", "#f8fcf8", "#44ab43"), bias = 1.3)
+
+reactable(select(data,  -GOID, -Genes), columns = list(
+  Overlap = colDef(align = "center",cell = function(value, index) {
+    sparkline(data$Overlap[[index]], type = "pie")
+  }),
+  
+  P.value = colDef(
+    maxWidth = 70, align = "center",
+    cell = function(value){
+    scaled <- (value - min(data$P.value)) / (max(data$P.value) - min(data$P.value))
+    color <- off_rating_color(scaled)
+    value<- signif(value, 2)
+    div(class = "spi-rating", style = list(background = color), value)
+  })
+  ),
+  
+  details = function(index) {
+  paste(data$GOID[[index]], data$Genes[[index]], sep = " - ")
+  }
+
+)
+
+```
+
+
+```{css}
+.spi-rating {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  border-radius: 50%;
+  color: #000;
+  font-size: 12px;
+  letter-spacing: -2px;
+}
+```
+

@@ -3,17 +3,9 @@ library(httr)
 
 
 url <- 'http://amp.pharm.mssm.edu/clustergrammer/matrix_upload/'
-
-
-
 hg <- upload_file("files/small_38x29_clustergrammer_matrix.txt")
 
-POST("http://httpbin.org/post", body = list(y = citation))
-
-
 res <- POST(url, body = list(file = hg))
-res %>% View()
-
 content(res)
 
 
@@ -23,8 +15,13 @@ test_mx <- matrix(c(84,58,38,63), ncol = 2, nrow = 2,
                                   )
                   )
 
+write.table(test_mx,"files/test_mtx.txt", sep = "\t", quote = F, col.names = NA)
+hg2 <- upload_file("files/test_mtx.txt")
 
-res <- POST(url, body = list(data = test_mx))
+
+res <- POST(url, body = list(file = hg2))
 res %>% View()
 
 content(res)
+
+hg

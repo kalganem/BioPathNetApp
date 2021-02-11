@@ -1,0 +1,12 @@
+name: BioPathNetApp
+title: BioPathNetApp
+username:
+account: kalganem
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3619624
+bundleId: 4208473
+url: https://kalganem.shinyapps.io/BioPathNetApp/
+when: 1613016731.8603
+asMultiple: FALSE
+asStatic: FALSE

@@ -1,0 +1,3 @@
+	sample1	sample2
+gene1	84	38
+gene2	58	63

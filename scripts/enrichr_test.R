@@ -62,5 +62,115 @@ lengths(enr_res[[1]])
 (9 * 36)
 
 
+library(enrichR)
+library(dplyr)
+library(sparkline) 
+library(tidyverse)
+library(reactable)
+library(htmltools)
+
+listEnrichrDbs() -> dbs_en
+enrichr(c("AKT3", "AKT2"), databases = "GO_Biological_Process_2018") -> res
+res$GO_Biological_Process_2018 -> table_ex
+
+table_ex %>% mutate(Overlap = strsplit(Overlap, "/")) %>% select(Term, Overlap, Genes, P.value) -> data
+
+data %>% 
+  extract(Term, c("Term", "GOID"), "(.*)\\((.*)\\)") -> data
 
 
+make_color_pal <- function(colors, bias = 1) {
+  get_color <- colorRamp(colors, bias = bias)
+  function(x) rgb(get_color(x), maxColorValue = 255)
+}
+
+orange_pal <- function(x) rgb(colorRamp(c("#ffe4cc", "#ff9500"))(x), maxColorValue = 255)
+
+off_rating_color <- make_color_pal(c("#ff2700", "#f8fcf8", "#44ab43"), bias = 1.3)
+
+orange_pal <- function(x) rgb(colorRamp(c("red", "white"))(x), maxColorValue = 255)
+
+
+reactable(select(data,  -GOID, -Genes), columns = list(
+  Overlap = colDef(align = "center",cell = function(value, index) {
+    sparkline(data$Overlap[[index]], type = "pie")
+  }),
+  
+  P.value = colDef(cell = function(value){
+    scaled <- (value - min(data$P.value)) / (max(data$P.value) - min(data$P.value))
+    color <- orange_pal(scaled)
+    value<- signif(value, 2)
+    div(class = "spi-rating", style = list(background = color), value)
+  })
+  ),
+  
+  details = function(index) {
+  paste(data$GOID[[index]], data$Genes[[index]], sep = " - ")
+  }
+
+)
+
+
+
+url <- 'http://amp.pharm.mssm.edu/clustergrammer/matrix_upload/'
+hg <- upload_file("files/small_38x29_clustergrammer_matrix.txt")
+
+res <- POST(url, body = list(file = hg))
+content(res)
+
+colnames()
+
+table_ex %>% select(Term, P.value, Genes) %>% 
+  separate_rows(Genes, sep = ";") %>% 
+  pivot_wider(names_from = Genes, values_from = P.value) %>% 
+  column_to_rownames("Term") %>% as.matrix() %>% log10() %>% `*`(-1) -> clust_mtx
+
+write.table(clust_mtx,"files/clust_mtx.txt", sep = "\t", quote = F, col.names = NA)
+hg2 <- upload_file("files/clust_mtx.txt")
+
+res <- POST(url, body = list(file = hg2))
+content(res) %>% class()
+
+library(xml2)
+
+read_xml("<p>This is some <b>text</b>. This is more.</p>")
+xml_text(content(res))
+
+
+
+data_both %>% separate_rows(Genes, sep = ";") %>% 
+  left_join(FCC, by = c("Genes" = "ID")) %>% group_by(Term) %>%  
+  mutate(Up  = sum(FC > 0),
+         Down = sum(FC < 0)) %>% ungroup() %>% 
+  select(-FC) %>% group_by(Term) %>% mutate(Genes = paste0(Genes, collapse = ";")) %>% 
+    ungroup() %>% distinct() %>% mutate(Dir = paste(Up, Down, sep = "_"),
+                                        Dir = strsplit(Dir, "_")
+                                        ) -> data
+
+
+red_pal <- function(x) rgb(colorRamp(c("red", "white"))(x), maxColorValue = 255)
+
+data %>% mutate(Down = ifelse(Term == "regulation of superoxide metabolic process", 4, Down)) %>% View()
+
+reactable(select(data,  Term, Overlap,Dir, P.value), columns = list(
+  Overlap = colDef(align = "center",cell = function(value, index) {
+    sparkline(data$Overlap[[index]], type = "pie")
+  }),
+  
+  P.value = colDef(cell = function(value){
+    scaled <- (value - min(data$P.value)) / (max(data$P.value) - min(data$P.value))
+    color <- red_pal(scaled)
+    value<- signif(value, 2)
+    div(class = "spi-rating", style = list(background = color), value)
+  }),
+  
+  Dir = colDef(cell = function(values) {
+    sparkline(values, type = "bar", chartRangeMin = 0, colorMap=c("#008000", "#800000"))
+  })
+),
+
+details = function(index) {
+  paste(data$GOID[[index]], data$Genes[[index]], sep = " - ")
+}
+
+)
